@@ -1,4 +1,26 @@
 import streamlit as st
+import streamlit as st
+import pandas as pd
+
+# --- SECURITY GATE (LOGIN SCREEN) ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔒 XpressBees Secure Portal")
+    pwd = st.text_input("Enter Hub Password:", type="password")
+    if st.button("Login"):
+        if pwd == st.secrets["APP_PASSWORD"]:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("❌ Galat Password! Access Denied.")
+    st.stop()  # Ye line aage ka dashboard tab tak rok degi jab tak login na ho
+# ------------------------------------
+
+# (Tera baaki ka purana code iske niche rahega...)
+st.set_page_config(page_title="XpressBees Surat Dashboard", layout="wide")
+# ...
 import pandas as pd
 import numpy as np
 
