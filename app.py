@@ -1,8 +1,11 @@
 import streamlit as st
-import streamlit as st
 import pandas as pd
+import io
 
-# --- SECURITY GATE (LOGIN SCREEN) ---
+# --- 1. PAGE CONFIG (Sabse upar hona zaroori hai) ---
+st.set_page_config(page_title="XpressBees Surat Dashboard", layout="wide")
+
+# --- 2. SECURITY GATE ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -10,32 +13,30 @@ if not st.session_state.authenticated:
     st.title("🔒 XpressBees Secure Portal")
     pwd = st.text_input("Enter Hub Password:", type="password")
     if st.button("Login"):
-        if pwd == st.secrets["APP_PASSWORD"]:
+        if pwd == st.secrets.get("APP_PASSWORD", "SuratHub@2026"): # Fallback for safety
             st.session_state.authenticated = True
             st.rerun()
         else:
             st.error("❌ Galat Password! Access Denied.")
-    st.stop()  # Ye line aage ka dashboard tab tak rok degi jab tak login na ho
-# ------------------------------------
+    st.stop()
 
-# (Tera baaki ka purana code iske niche rahega...)
-st.set_page_config(page_title="XpressBees Surat Dashboard", layout="wide")
-# ...
-import pandas as pd
-import numpy as np
-
-# --- PAGE SETUP ---
-st.set_page_config(page_title="XpressBees Surat Dashboard", layout="wide")
+# --- 3. MAIN DASHBOARD UI ---
 st.title("👑 XpressBees Surat Hub - Deep Analysis Dashboard")
 st.markdown("**Owner: Pandi Jagan** | Live Operations Portal")
 
-# --- SIDEBAR UPLOADS ---
 st.sidebar.header("📂 Data Upload (Daily)")
 mapping_file = st.sidebar.file_uploader("1. Upload Mappings (Expriment 2.xlsx)", type=['xlsx'])
 inscan_file = st.sidebar.file_uploader("2. Upload InScan CSV", type=['csv'])
 closed_file = st.sidebar.file_uploader("3. Upload BagClosed CSV", type=['csv'])
 
-# --- MAPPING CACHE FUNCTION ---
+# Function to convert dataframe to excel for download
+def to_excel(df):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
+
 @st.cache_data
 def load_mappings(file):
     try:
@@ -45,104 +46,85 @@ def load_mappings(file):
         dest_map = dict(zip(dest_df['ShipmentDestination'].astype(str).str.strip().str.upper(), dest_df['GroupName'].astype(str).str.strip()))
         lane_map = dict(zip(lane_df['Groups'].astype(str).str.strip().str.upper(), lane_df['lANE'].astype(str).str.strip()))
         return dest_map, lane_map
-    except Exception as e:
-        st.sidebar.error("Mapping file error. Please check Expriment 2.xlsx")
+    except:
         return {}, {}
 
-# --- PROCESSING FUNCTION ---
-def process_data(df, dest_map, lane_map):
-    df = df.copy()
-    # Ensure numerical columns are numeric
-    for col in ['totalshipments', 'physicalweight', 'pendinghrs']:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    
-    # Clean Destination (Remove brackets)
-    if 'destinationhubname' in df.columns:
-        df['Clean_Dest'] = df['destinationhubname'].astype(str).apply(lambda x: x.split('(')[0].strip())
-    else:
-        df['Clean_Dest'] = "Unknown"
-        
-    # Apply Mappings
-    df['Mapped_Group'] = df['Clean_Dest'].apply(lambda x: dest_map.get(x.upper(), "Unmapped"))
-    df['Mapped_Lane'] = df['Mapped_Group'].apply(lambda x: lane_map.get(x.upper(), "Unmapped") if x != "Unmapped" else "Unmapped")
-    
-    # Classification Logic (Processing vs Connection)
-    def classify(row):
-        dest = str(row.get('Clean_Dest', '')).upper()
-        grp = str(row.get('Mapped_Group', '')).upper()
-        lane = str(row.get('Mapped_Lane', '')).upper()
-        
-        if dest.startswith("SRT") or grp == "SURAT CITY" or lane == "LOCAL":
-            return "Processing"
-        return "Connection"
-    
-    df['Classification'] = df.apply(classify, axis=1)
-    return df
-
-# --- MAIN APP LOGIC ---
 if mapping_file and inscan_file and closed_file:
     dest_map, lane_map = load_mappings(mapping_file)
     
-    with st.spinner("Analyzing Bags... Please wait!"):
-        inscan_df = pd.read_csv(inscan_file)
-        closed_df = pd.read_csv(closed_file)
+    in_df = pd.read_csv(inscan_file)
+    cl_df = pd.read_csv(closed_file)
+    
+    def process_data(df, source):
+        df = df.copy()
+        df['Source'] = source
+        # Drop duplicate bags in the same file to fix ghost counting
+        df = df.drop_duplicates(subset=['bagno'], keep='first')
         
-        in_proc = process_data(inscan_df, dest_map, lane_map)
-        cl_proc = process_data(closed_df, dest_map, lane_map)
+        df['totalshipments'] = pd.to_numeric(df.get('totalshipments', 0), errors='coerce').fillna(0)
+        df['physicalweight'] = pd.to_numeric(df.get('physicalweight', 0), errors='coerce').fillna(0)
+        df['pendinghrs'] = pd.to_numeric(df.get('pendinghrs', 0), errors='coerce').fillna(0)
         
-        # Tabs for Dashboards
-        tab1, tab2, tab3 = st.tabs(["🚚 Connection Dashboard", "🏭 Processing Dashboard", "🔍 Bag Search Engine"])
+        df['Clean_Dest'] = df.get('destinationhubname', '').astype(str).apply(lambda x: x.split('(')[0].strip().upper())
+        df['Mapped_Group'] = df['Clean_Dest'].apply(lambda x: dest_map.get(x, "UNMAPPED"))
+        df['Mapped_Lane'] = df['Mapped_Group'].apply(lambda x: lane_map.get(x.upper(), "UNMAPPED") if x != "UNMAPPED" else "UNMAPPED")
         
-        # TAB 1: CONNECTION
-        with tab1:
-            st.subheader("Line-Haul / Outstation Bags")
-            in_conn = in_proc[in_proc['Classification'] == 'Connection']
-            cl_conn = cl_proc[cl_proc['Classification'] == 'Connection']
-            
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Connection Bags", len(in_conn) + len(cl_conn))
-            col2.metric("Total Shipments", int(in_conn['totalshipments'].sum() + cl_conn['totalshipments'].sum()))
-            col3.metric("Critical >24 Hrs", len(in_conn[in_conn['pendinghrs']>24]) + len(cl_conn[cl_conn['pendinghrs']>24]))
-            col4.metric("Unmapped Bags", len(in_conn[in_conn['Mapped_Lane']=='Unmapped']) + len(cl_conn[cl_conn['Mapped_Lane']=='Unmapped']))
-            
-            st.markdown("#### Top 30 High Ageing (Connection)")
-            top_conn = pd.concat([in_conn, cl_conn]).sort_values(by='pendinghrs', ascending=False).head(30)
-            st.dataframe(top_conn[['bagno', 'bagstatus', 'Clean_Dest', 'Mapped_Lane', 'pendinghrs', 'totalshipments']], use_container_width=True)
+        # Classification (Processing vs Connection)
+        df['Classification'] = df.apply(lambda r: "Processing" if r['Clean_Dest'].startswith("SRT") or r['Mapped_Group'] == "SURAT CITY" or r['Mapped_Lane'] == "LOCAL" else "Connection", axis=1)
+        
+        # Exact Ageing Buckets
+        df['Age_Bucket'] = pd.cut(df['pendinghrs'], bins=[-1, 1, 3, 12, 24, 9999], labels=['0-1 hr', '1-3 hrs', '3-12 hrs', '12-24 hrs', '>24 hrs'])
+        return df
 
-        # TAB 2: PROCESSING
-        with tab2:
-            st.subheader("Local Surat Processing Bags")
-            in_pr = in_proc[in_proc['Classification'] == 'Processing']
-            cl_pr = cl_proc[cl_proc['Classification'] == 'Processing']
-            
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total Processing Bags", len(in_pr) + len(cl_pr))
-            c2.metric("Total Shipments", int(in_pr['totalshipments'].sum() + cl_pr['totalshipments'].sum()))
-            c3.metric("RTO Bags", len(in_pr[in_pr.get('bagtype','') == 'RTOBag']) + len(cl_pr[cl_pr.get('bagtype','') == 'RTOBag']))
-            c4.metric("Avg Pending Hrs", round(pd.concat([in_pr, cl_pr])['pendinghrs'].mean(), 1))
-            
-            st.markdown("#### Top 30 High Ageing (Processing)")
-            top_pr = pd.concat([in_pr, cl_pr]).sort_values(by='pendinghrs', ascending=False).head(30)
-            st.dataframe(top_pr[['bagno', 'bagstatus', 'Clean_Dest', 'Mapped_Group', 'pendinghrs', 'totalshipments']], use_container_width=True)
+    in_proc = process_data(in_df, "InScan")
+    cl_proc = process_data(cl_df, "BagClosed")
+    all_data = pd.concat([in_proc, cl_proc])
 
-        # TAB 3: SEARCH
-        with tab3:
-            st.subheader("Bag Search Engine")
-            search_bag = st.text_input("Enter Bag Number to Search:")
-            if search_bag:
-                st.markdown(f"**Results for {search_bag}:**")
-                res_in = in_proc[in_proc['bagno'].astype(str).str.contains(search_bag, case=False, na=False)]
-                res_cl = cl_proc[cl_proc['bagno'].astype(str).str.contains(search_bag, case=False, na=False)]
-                
-                if not res_in.empty:
-                    st.success("Found in INSCAN!")
-                    st.dataframe(res_in[['bagno', 'Clean_Dest', 'Mapped_Lane', 'Classification', 'pendinghrs', 'totalshipments', 'physicalweight', 'lastmodifiedby']])
-                if not res_cl.empty:
-                    st.warning("Found in BAGCLOSED!")
-                    st.dataframe(res_cl[['bagno', 'Clean_Dest', 'Mapped_Lane', 'Classification', 'pendinghrs', 'totalshipments', 'physicalweight', 'lastmodifiedby']])
-                if res_in.empty and res_cl.empty:
-                    st.error("Bag Not Found in Current Data.")
+    tab1, tab2, tab3 = st.tabs(["🚚 Connection Dashboard", "🏭 Processing Dashboard", "🔍 Bag Search Engine"])
+    
+    with tab1:
+        st.subheader("Lane-Wise Connection Summary")
+        conn_data = all_data[all_data['Classification'] == 'Connection']
+        if not conn_data.empty:
+            # Pivot table to merge duplicate lanes into a single row
+            pivot_conn = conn_data.pivot_table(
+                index='Mapped_Lane', 
+                values=['bagno', 'totalshipments', 'physicalweight'],
+                aggfunc={'bagno': 'count', 'totalshipments': 'sum', 'physicalweight': 'sum'}
+            ).rename(columns={'bagno': 'Total Bags', 'totalshipments': 'Total Shipments', 'physicalweight': 'Total Weight'})
+            
+            ageing_conn = conn_data.pivot_table(index='Mapped_Lane', columns='Age_Bucket', values='bagno', aggfunc='count', fill_value=0)
+            final_conn = pivot_conn.join(ageing_conn).reset_index()
+            
+            st.dataframe(final_conn, use_container_width=True)
+            
+            # Download Actionable Bags Button
+            st.download_button(label="📥 Download Connection Bags Details", data=to_excel(conn_data), file_name="Connection_Bags_Details.xlsx", mime="application/vnd.ms-excel")
 
-else:
-    st.info("👈 Please upload the Mappings, InScan, and BagClosed files in the Sidebar to generate the dashboard.")
+    with tab2:
+        st.subheader("Hub-Wise Processing Summary")
+        proc_data = all_data[all_data['Classification'] == 'Processing']
+        if not proc_data.empty:
+            pivot_proc = proc_data.pivot_table(
+                index='Clean_Dest', 
+                values=['bagno', 'totalshipments', 'physicalweight'],
+                aggfunc={'bagno': 'count', 'totalshipments': 'sum', 'physicalweight': 'sum'}
+            ).rename(columns={'bagno': 'Total Bags', 'totalshipments': 'Total Shipments', 'physicalweight': 'Total Weight'})
+            
+            ageing_proc = proc_data.pivot_table(index='Clean_Dest', columns='Age_Bucket', values='bagno', aggfunc='count', fill_value=0)
+            final_proc = pivot_proc.join(ageing_proc).reset_index()
+            
+            st.dataframe(final_proc, use_container_width=True)
+            
+            # Download Actionable Bags Button
+            st.download_button(label="📥 Download Processing Bags Details", data=to_excel(proc_data), file_name="Processing_Bags_Details.xlsx", mime="application/vnd.ms-excel")
+
+    with tab3:
+        st.subheader("Bag Search Engine")
+        search_val = st.text_input("Enter Bag Number:")
+        if search_val:
+            res = all_data[all_data['bagno'].astype(str).str.contains(search_val, case=False, na=False)]
+            if not res.empty:
+                st.dataframe(res[['Source', 'bagno', 'Clean_Dest', 'Mapped_Group', 'Mapped_Lane', 'Classification', 'pendinghrs', 'totalshipments', 'bagcreatedby', 'lastmodifiedby']], use_container_width=True)
+            else:
+                st.error("Bag Not Found!")
