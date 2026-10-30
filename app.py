@@ -5,13 +5,51 @@ from datetime import datetime
 
 st.set_page_config(page_title="Surat Hub Pendency Monitor", page_icon="📦", layout="wide")
 
-# --- 1. SINGLE-LINE CSS (NO TRIPLE QUOTES, HEADER CUT-OFF FIXED) ---
-css = "<style>.block-container{padding-top:3.5rem!important;padding-bottom:2rem!important;max-width:98%!important;}.top-bar{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:16px 24px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-left:6px solid #3b82f6;box-shadow:0 4px 12px rgba(0,0,0,0.12);}.top-title{font-size:24px;font-weight:800;margin:0;color:#fff;}.top-sub{font-size:13px;color:#94a3b8;margin-top:2px;}.owner-tag{background:#1e293b;border:1px solid #3b82f6;color:#60a5fa;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;}.kpi-box{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.04);margin-bottom:10px;border-bottom:4px solid #3b82f6;}.kpi-lbl{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;}.kpi-num{font-size:23px;font-weight:800;color:#0f172a;margin-top:2px;}.kpi-sub{font-size:11px;color:#475569;font-weight:600;}.mini-box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px;text-align:center;margin-bottom:10px;}.drill-bar{background:#eff6ff;border-left:5px solid #2563eb;padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px;}.bag-card{background:#0f172a;color:#fff;padding:16px 20px;border-radius:12px;margin-bottom:14px;border-left:6px solid #f59e0b;}</style>"
+# --- ENTERPRISE SCREENSHOT-STYLE CSS ---
+css = """
+<style>
+    .block-container { padding-top: 3.5rem !important; padding-bottom: 2rem !important; max-width: 98% !important; }
+    .top-bar {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: white; padding: 18px 24px; border-radius: 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 20px; border-left: 6px solid #2563eb;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .top-title { font-size: 24px; font-weight: 800; margin: 0; color: #fff; }
+    .top-sub { font-size: 13px; color: #94a3b8; margin-top: 3px; }
+    .owner-tag {
+        background: #1e293b; border: 1px solid #3b82f6; color: #60a5fa;
+        padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700;
+    }
+    /* Enterprise KPI Card Style (Matching Screenshot) */
+    .kpi-card {
+        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 16px 12px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        margin-bottom: 12px; border-top: 3px solid #2563eb;
+    }
+    .kpi-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-val { font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 6px; }
+    .kpi-footer { font-size: 11px; color: #475569; margin-top: 4px; font-weight: 600; }
+    .mini-card {
+        background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;
+        padding: 10px; text-align: center; margin-bottom: 10px;
+    }
+    .drill-box {
+        background: #eff6ff; border-left: 5px solid #2563eb;
+        padding: 12px 16px; border-radius: 8px; margin: 12px 0; font-size: 14px;
+    }
+    .bag-card {
+        background: #0f172a; color: #fff; padding: 18px 22px;
+        border-radius: 10px; margin-bottom: 14px; border-left: 6px solid #f59e0b;
+    }
+</style>
+"""
 st.markdown(css, unsafe_allow_html=True)
 
-# --- 2. AUTO-LOGIN GATE ---
+# --- LOGIN GATE ---
 if st.query_params.get("auth") != "success":
-    st.markdown("<h3 style='text-align:center;margin-top:40px;'>🔒 Surat Hub Pendency Monitor</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; margin-top:50px;'>🔒 Surat Hub Pendency Monitor</h3>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1, 1])
     with c2:
         pwd = st.text_input("Enter Hub Password:", type="password")
@@ -23,10 +61,18 @@ if st.query_params.get("auth") != "success":
                 st.error("❌ Galat Password!")
     st.stop()
 
-# --- 3. TOP BANNER ---
-st.markdown("<div class='top-bar'><div><div class='top-title'>📦 Surat Hub Pendency Monitor</div><div class='top-sub'>Enterprise Data Analytics & Live Operations Intelligence • XpressBees SRT Hub</div></div><div class='owner-tag'>⚡ Analytics by Jagan</div></div>", unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown("""
+<div class="top-bar">
+    <div>
+        <div class="top-title">📦 Surat Hub Pendency Monitor</div>
+        <div class="top-sub">Enterprise Analytics & Live Operations Command Center • XpressBees SRT Hub</div>
+    </div>
+    <div class="owner-tag">⚡ Analytics by Jagan</div>
+</div>
+""", unsafe_allow_html=True)
 
-# --- 4. SIDEBAR UPLOAD & PERSISTENCE ---
+# --- SIDEBAR CONTROL CENTER ---
 st.sidebar.header("📂 Data Control Center")
 map_up = st.sidebar.file_uploader("1. Mappings (Expriment 2.xlsx)", type=['xlsx'])
 in_up = st.sidebar.file_uploader("2. InScan CSV", type=['csv'])
@@ -42,7 +88,7 @@ if cl_up:
 def to_excel(df):
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Analysis')
+        df.to_excel(writer, index=False, sheet_name='Report')
     return out.getvalue()
 
 def get_col(df, names, default="-"):
@@ -52,7 +98,7 @@ def get_col(df, names, default="-"):
             return df[cmap[n.lower()]].fillna(default).astype(str)
     return pd.Series([default] * len(df), index=df.index)
 
-# --- 5. DATA ANALYTICS ENGINE ---
+# --- DATA ENGINE ---
 if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("cl.csv"):
     @st.cache_data(ttl=60)
     def read_maps(mtime):
@@ -99,7 +145,7 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
     unmap_df = all_data[(all_data['Mapped_Group'] == 'UNMAPPED') | (all_data['Mapped_Lane'] == 'UNMAPPED')]
 
     with st.sidebar.expander("📲 WhatsApp Summary", expanded=True):
-        st.code(f"*📦 SURAT HUB PENDENCY*\n🕒 {datetime.now().strftime('%d-%b %I:%M %p')}\n\n🚚 *Connection:* {len(conn_df)} Bags ({int(conn_df['totalshipments'].sum()):,} Ships) | >12h: {int((conn_df['pendinghrs']>12).sum())} | >24h: {int((conn_df['pendinghrs']>24).sum())}\n🏭 *Processing:* {len(proc_df)} Bags ({int(proc_df['totalshipments'].sum()):,} Ships) | >12h: {int((proc_df['pendinghrs']>12).sum())} | >24h: {int((proc_df['pendinghrs']>24).sum())}\n_Analytics by Jagan_")
+        st.code(f"*📦 SURAT HUB PENDENCY*\n🕒 {datetime.now().strftime('%d-%b %I:%M %p')}\n\n🚚 *Connection:* {len(conn_df)} Bags ({int(conn_df['totalshipments'].sum()):,} Ships)\n🏭 *Processing:* {len(proc_df)} Bags ({int(proc_df['totalshipments'].sum()):,} Ships)\n_Analytics by Jagan_")
 
     COLS = ['Source', 'bagno', 'Current_Hub', 'Clean_Dest', 'Mapped_Group', 'Mapped_Lane', 'pendinghrs', 'Age_Bucket', 'totalshipments', 'physicalweight', 'Bag_Type', 'Bag_Mode', 'Created_Time', 'Created_By', 'Last_Modified_By']
 
@@ -112,13 +158,14 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
         p12, p24 = int((df['pendinghrs'] > 12).sum()), int((df['pendinghrs'] > 24).sum())
         avg_h, sla_pct = round(df['pendinghrs'].mean(), 1), round((p12 / len(df)) * 100, 1)
 
+        # Screenshot Style KPI Grid Cards
         k1, k2, k3, k4, k5, k6 = st.columns(6)
-        k1.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>Total Unique Bags</div><div class='kpi-num'>{len(df):,}</div><div class='kpi-sub'>Avg {int(ships/len(df))} Ships/Bag</div></div>", unsafe_allow_html=True)
-        k2.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>InScan vs Closed</div><div class='kpi-num'>{in_c} / {cl_c}</div><div class='kpi-sub'>{round(in_c/len(df)*100)}% InScan Stage</div></div>", unsafe_allow_html=True)
-        k3.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>Total Shipments</div><div class='kpi-num'>{ships:,}</div><div class='kpi-sub'>Active Load</div></div>", unsafe_allow_html=True)
-        k4.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>Physical Weight</div><div class='kpi-num'>{wt:,.1f}</div><div class='kpi-sub'>Avg {round(wt/len(df),1)} Kg/Bag</div></div>", unsafe_allow_html=True)
-        k5.markdown(f"<div class='kpi-box' style='border-bottom-color:#f59e0b;'><div class='kpi-lbl'>Pending > 12 Hrs</div><div class='kpi-num' style='color:#d97706;'>{p12:,}</div><div class='kpi-sub'>{sla_pct}% Breach Rate</div></div>", unsafe_allow_html=True)
-        k6.markdown(f"<div class='kpi-box' style='border-bottom-color:#ef4444;'><div class='kpi-lbl'>Critical > 24 Hrs</div><div class='kpi-num' style='color:#dc2626;'>{p24:,}</div><div class='kpi-sub'>Avg Age: {avg_h} Hrs</div></div>", unsafe_allow_html=True)
+        k1.markdown(f"<div class='kpi-card' style='border-top-color:#3b82f6;'><div class='kpi-title'>Total Bags</div><div class='kpi-val'>{len(df):,}</div><div class='kpi-footer'>Avg {int(ships/len(df))} Ships/Bag</div></div>", unsafe_allow_html=True)
+        k2.markdown(f"<div class='kpi-card' style='border-top-color:#8b5cf6;'><div class='kpi-title'>InScan / Closed</div><div class='kpi-val'>{in_c} / {cl_c}</div><div class='kpi-footer'>{round(in_c/len(df)*100)}% InScan</div></div>", unsafe_allow_html=True)
+        k3.markdown(f"<div class='kpi-card' style='border-top-color:#10b981;'><div class='kpi-title'>Shipments</div><div class='kpi-val'>{ships:,}</div><div class='kpi-footer'>Active Load</div></div>", unsafe_allow_html=True)
+        k4.markdown(f"<div class='kpi-card' style='border-top-color:#0ea5e9;'><div class='kpi-title'>Weight (Kg)</div><div class='kpi-val'>{wt:,.1f}</div><div class='kpi-footer'>Avg {round(wt/len(df),1)} Kg</div></div>", unsafe_allow_html=True)
+        k5.markdown(f"<div class='kpi-card' style='border-top-color:#f59e0b;'><div class='kpi-title'>Pending > 12h</div><div class='kpi-val' style='color:#d97706;'>{p12:,}</div><div class='kpi-footer'>{sla_pct}% Breach</div></div>", unsafe_allow_html=True)
+        k6.markdown(f"<div class='kpi-card' style='border-top-color:#ef4444;'><div class='kpi-title'>Critical > 24h</div><div class='kpi-val' style='color:#dc2626;'>{p24:,}</div><div class='kpi-footer'>Avg {avg_h} Hrs</div></div>", unsafe_allow_html=True)
 
         if is_proc:
             bt, bm = df['Bag_Type'].str.upper(), df['Bag_Mode'].str.upper()
@@ -126,10 +173,10 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
             air = int(bm.str.contains('AIR', na=False).sum())
             m1, m2, m3, m4, m5, m6 = st.columns(6)
             m1.markdown(f"<div class='mini-box'><b>📦 NORMAL:</b> {len(df)-(rto+dto+dmg)}</div>", unsafe_allow_html=True)
-            m2.markdown(f"<div class='mini-box'><b>🔄 RTO BAGS:</b> {rto}</div>", unsafe_allow_html=True)
-            m3.markdown(f"<div class='mini-box'><b>📥 DTO BAGS:</b> {dto}</div>", unsafe_allow_html=True)
+            m2.markdown(f"<div class='mini-box'><b>🔄 RTO:</b> {rto}</div>", unsafe_allow_html=True)
+            m3.markdown(f"<div class='mini-box'><b>📥 DTO:</b> {dto}</div>", unsafe_allow_html=True)
             m4.markdown(f"<div class='mini-box'><b>⚠️ DAMAGE:</b> {dmg}</div>", unsafe_allow_html=True)
-            m5.markdown(f"<div class='mini-box'><b>✈️ AIR MODE:</b> {air}</div>", unsafe_allow_html=True)
+            m5.markdown(f"<div class='mini-box'><b>✈️ AIR:</b> {air}</div>", unsafe_allow_html=True)
             m6.markdown(f"<div class='mini-box'><b>🚛 SURFACE:</b> {len(df)-air}</div>", unsafe_allow_html=True)
 
         base = df.groupby(grp_col).agg(InScan=('Source', lambda x: (x=='InScan').sum()), BagClosed=('Source', lambda x: (x=='BagClosed').sum()), Total_Bags=('bagno', 'count'), Shipments=('totalshipments', 'sum'), Weight_Kg=('physicalweight', 'sum'), Avg_Hrs=('pendinghrs', 'mean'), B12=('pendinghrs', lambda x: (x>12).sum()))
@@ -145,7 +192,7 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
         summary_df = pd.concat([m, pd.DataFrame([tot])], ignore_index=True)
 
         st.markdown(f"#### 📈 {grp_label}-Wise Master Ageing Matrix (Click any row to inspect bags)")
-        ev = st.dataframe(summary_df, use_container_width=True, height=400, hide_index=True, on_select="rerun", selection_mode="single-row", key=f"{k_pre}_tbl")
+        ev = st.dataframe(summary_df, use_container_width=True, height=380, hide_index=True, on_select="rerun", selection_mode="single-row", key=f"{k_pre}_tbl")
 
         with st.expander("🧠 Deep Data Analyst Breakdown (Floor Load • Bag Type Matrix • Operator Accountability)", expanded=True):
             a1, a2, a3 = st.columns(3)
@@ -193,7 +240,7 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
             st.markdown("##### 🟠 Top 50 BagClosed Bags")
             st.dataframe(df[df['Source'] == 'BagClosed'].sort_values(by='pendinghrs', ascending=False).head(50)[COLS], use_container_width=True, height=340, hide_index=True)
 
-    # --- 6. MAIN TABS ---
+    # --- TABS ---
     t1, t2, t3, t4 = st.tabs([f"🚚 Connection Hub ({len(conn_df)})", f"🏭 Processing Hub ({len(proc_df)})", f"⚠️ Unmapped ({len(unmap_df)})", "🔍 Deep Bag Search & Kundli"])
     with t1: render_section(conn_df, 'Mapped_Lane', 'Lane', False, "conn")
     with t2: render_section(proc_df, 'Clean_Dest', 'Hub', True, "proc")
@@ -220,7 +267,7 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
                 b = res.iloc[0]
                 days_p = round(float(b['pendinghrs']) / 24, 1)
                 sla = "🚨 CRITICAL SLA BREACH (>24h)" if float(b['pendinghrs']) > 24 else ("⚠️ WARNING (>12h)" if float(b['pendinghrs']) > 12 else "✅ WITHIN SLA")
-                card = f"<div class='bag-card'><h4 style='margin:0;color:#fbbf24;'>📦 Bag Kundli: {b['bagno']} ({b['Source']}) — {sla}</h4><hr style='border-color:#334155;margin:8px 0;'><p style='margin:4px 0;font-size:14px;'><b>🛣️ Full Route:</b> Current Hub: <code>{b['Current_Hub']}</code> ➔ Dest: <code>{b['Clean_Dest']}</code> ➔ Group: <code>{b['Mapped_Group']}</code> ➔ Lane: <code>{b['Mapped_Lane']}</code> (<b>{b['Classification']}</b>)</p><p style='margin:4px 0;font-size:14px;'><b>⏱️ Ageing & Load:</b> Pending: <b>{b['pendinghrs']} Hrs ({days_p} Days)</b> | Bucket: <b>{b['Age_Bucket']}</b> | Shipments: <b>{int(b['totalshipments'])}</b> | Weight: <b>{b['physicalweight']} Kg</b> | Type: <b>{b['Bag_Type']} ({b['Bag_Mode']})</b></p><p style='margin:4px 0;font-size:14px;'><b>👤 Audit Trail:</b> Created Time: <code>{b['Created_Time']}</code> | Created By: <code>{b['Created_By']}</code> | Last Modified By: <code>{b['Last_Modified_By']}</code></p></div>"
+                card = f"<div class='bag-card'><h4 style='margin:0;color:#fbbf24;'>📦 Bag Kundli: {b['bagno']} ({b['Source']}) — {sla}</h4><hr style='border-color:#334155;margin:8px 0;'><p style='margin:4px 0;font-size:14px;'><b>🛣️ Full Route:</b> Current Hub: <code>{b['Current_Hub']}</code> ➔ Dest: <code>{b['Clean_Dest']}</code> ➔ Group: <code>{b['Mapped_Group']}</code> ➔ Lane: <code>{b['Mapped_Lane']}</code> (<b>{b['Classification']}</b>)</p><p style='margin:4px 0;font-size:14px;'><b>⏱️ Ageing & Load:</b> Pending: <b>{b['pendinghrs']} Hrs ({days_p} Days)</b> | Bucket: <b>{b['Age_Bucket']}</b> | Shipments: <b>{int(b['totalshipments'])}</b> | Weight: <b>{b['physicalweight']} Kg</b> | Type: <b>{b['Bag_Type']} ({b['Bag_Mode']})</b></p><p style='margin:4px 0;font-size:14px;'><b>👤 Audit Trail:</b> Created Time: <code>{b['Created_Time']}</code> | Created By: <code>{b['Created_By']}</code> | Last Modified By: <code>{b['Last_Modified_Body']}</code></p></div>"
                 st.markdown(card, unsafe_allow_html=True)
                 st.dataframe(res[COLS], use_container_width=True, hide_index=True)
                 td = b['Clean_Dest']
@@ -231,4 +278,4 @@ if os.path.exists("map.xlsx") and os.path.exists("in.csv") and os.path.exists("c
                 st.error("❌ Record not found!")
 else:
     st.info("👈 Left sidebar se Mapping, InScan, aur BagClosed files ek baar upload karein.")
-# --- END ---
+#
